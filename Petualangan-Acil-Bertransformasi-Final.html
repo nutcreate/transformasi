@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Petualangan Kucing Acil Bertransformasi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-color: #ffe6f2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        h1 { color: #ff66a3; margin: 0 0 5px 0; text-align: center; }
+        #level-desc { color: #cc0052; font-weight: 600; margin-bottom: 20px; text-align: center; }
+        
+        .game-container {
+            display: flex;
+            gap: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 8px 16px rgba(255, 102, 163, 0.2);
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 950px;
+        }
+        
+        .canvas-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        canvas {
+            background-color: #fdfdfd;
+            border: 4px solid #ffb3d1;
+            border-radius: 15px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+        }
+        
+        .panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 340px;
+            background: #fff0f5;
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px dashed #ff99c2;
+        }
+        
+        .info-box {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            width: 100%;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        
+        .info-box p { margin: 8px 0; font-size: 15px; font-weight: 600; color: #555; }
+        .highlight { color: #ff3385; font-weight: 700; }
+        .val { color: #6699ff; font-weight: 700; }
+        
+        .control-group {
+            width: 100%;
+            margin-bottom: 15px;
+            display: none; /* Diatur oleh JavaScript */
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .group-title {
+            font-size: 14px;
+            color: #cc0052;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .d-pad {
+            display: grid;
+            grid-template-columns: 60px 60px 60px;
+            grid-template-rows: 60px 60px 60px;
+            gap: 8px;
+        }
+        
+        .btn-dpad {
+            background-color: #ff66a3;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #cc0052;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .btn-dpad:active { box-shadow: 0 0 0 #cc0052; transform: translateY(5px); }
+        .btn-up { grid-column: 2; grid-row: 1; }
+        .btn-left { grid-column: 1; grid-row: 2; }
+        .btn-right { grid-column: 3; grid-row: 2; }
+        .btn-down { grid-column: 2; grid-row: 3; }
+        
+        .action-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            width: 100%;
+        }
+        
+        .btn-action {
+            background-color: #6699ff;
+            color: white;
+            border: none;
+            padding: 12px 5px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'Fredoka', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #0044cc;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .btn-action.rot { background-color: #9966ff; box-shadow: 0 4px 0 #6600cc; }
+        .btn-action.dil { background-color: #33cc99; box-shadow: 0 4px 0 #009966; }
+        .btn-action.reset { background-color: #ff4d4d; box-shadow: 0 4px 0 #cc0000; grid-column: span 2; }
+        .btn-action:active { box-shadow: 0 0 0 transparent; transform: translateY(4px); }
+        
+        #win-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        #win-msg {
+            color: #ff3385;
+            font-size: 20px;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        #btn-next {
+            background-color: #33cc33;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: 'Fredoka', sans-serif;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #248f24;
+        }
+        #btn-next:active { box-shadow: 0 0 0 #248f24; transform: translateY(5px); }
+        
+        #btn-prev {
+            background-color: #ffaa00;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'Fredoka', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #cc8800;
+            margin-top: 10px;
+            width: 100%;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        #btn-prev:active { box-shadow: 0 0 0 #cc8800; transform: translateY(4px); }
+    </style>
+</head>
+<body>
+
+    <h1 id="level-title">Memuat Game...</h1>
+    <p id="level-desc">Tunggu sebentar ya!</p>
+    
+    <!-- Tombol Musik Latar -->
+    <button id="btn-bgm" onclick="game.toggleBGM()" style="margin-bottom: 20px; background: #6699ff; color: white; border: none; padding: 10px 20px; border-radius: 12px; font-size: 16px; font-family: 'Fredoka', sans-serif; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 #0044cc; transition: transform 0.1s, box-shadow 0.1s;">🎵 Musik: OFF</button>
+
+    <div class="game-container" id="main-game" style="display: none;">
+        <div class="canvas-wrapper">
+            <canvas id="gameCanvas" width="400" height="400"></canvas>
+        </div>
+        
+        <div class="panel">
+            <div class="info-box">
+                <p>🏁 Titik Awal: (<span id="start-x" class="val">0</span>, <span id="start-y" class="val">0</span>)</p>
+                <p>📍 Titik Akhir: (<span id="cat-x" class="val">0</span>, <span id="cat-y" class="val">0</span>)</p>
+                <div id="info-extra"></div>
+            </div>
+
+            <div id="group-trans" class="control-group">
+                <div class="group-title">Translasi</div>
+                <div class="d-pad">
+                    <button class="btn-dpad btn-up" onclick="game.actionTrans(0, 1)">⬆️</button>
+                    <button class="btn-dpad btn-left" onclick="game.actionTrans(-1, 0)">⬅️</button>
+                    <button class="btn-dpad btn-right" onclick="game.actionTrans(1, 0)">➡️</button>
+                    <button class="btn-dpad btn-down" onclick="game.actionTrans(0, -1)">⬇️</button>
+                </div>
+            </div>
+
+            <div id="group-ref" class="control-group">
+                <div class="group-title">Refleksi</div>
+                <div class="action-grid">
+                    <button class="btn-action" onclick="game.actionRef('x')">Sumbu X</button>
+                    <button class="btn-action" onclick="game.actionRef('y')">Sumbu Y</button>
+                    <button class="btn-action" onclick="game.actionRef('yx')">y = x</button>
+                    <button class="btn-action" onclick="game.actionRef('y-x')">y = -x</button>
+                    <button class="btn-action" onclick="game.actionRef('x2')">x = 2</button>
+                    <button class="btn-action" onclick="game.actionRef('x-2')">x = -2</button>
+                    <button class="btn-action" onclick="game.actionRef('y3')">y = 3</button>
+                    <button class="btn-action" onclick="game.actionRef('y-3')">y = -3</button>
+                </div>
+            </div>
+
+            <div id="group-rot" class="control-group">
+                <div class="group-title">Rotasi (Pusat 0,0)</div>
+                <div class="action-grid">
+                    <button class="btn-action rot" onclick="game.actionRot(90)">Putar 90°</button>
+                    <button class="btn-action rot" onclick="game.actionRot(-90)">Putar -90°</button>
+                    <button class="btn-action rot" onclick="game.actionRot(180)">Putar 180°</button>
+                    <button class="btn-action rot" onclick="game.actionRot(-180)">Putar -180°</button>
+                </div>
+            </div>
+
+            <div id="group-dil" class="control-group">
+                <div class="group-title">Dilatasi (Pusat 0,0)</div>
+                <div class="action-grid">
+                    <button class="btn-action dil" onclick="game.actionDil(2)">Skala 2x</button>
+                    <button class="btn-action dil" onclick="game.actionDil(3)">Skala 3x</button>
+                    <button class="btn-action dil" onclick="game.actionDil(0.5)">Skala 0.5x</button>
+                    <button class="btn-action dil" onclick="game.actionDil(-1)">Skala -1x</button>
+                </div>
+            </div>
+            
+            <div id="group-reset" class="control-group">
+                <div class="action-grid">
+                    <button class="btn-action reset" onclick="game.resetLevel()">🔄 Reset Posisi Kucing</button>
+                </div>
+                <button id="btn-prev" onclick="game.prevLevel()">⬅️ Kembali ke Level Sebelumnya</button>
+            </div>
+
+            <div id="win-container">
+                <div id="win-msg">Yey! Kucing dapat ikan! 🎉</div>
+                <button id="btn-next" onclick="game.nextLevel()">Lanjut Level 🚀</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Menggunakan objek global 'game' agar semua fungsi dapat diakses oleh tombol HTML
+        window.game = {
+            canvas: null,
+            ctx: null,
+            scale: 20,
+            origin: 200,
+            
+            level: 1,
+            startCat: { x: 0, y: 0 }, // Menyimpan titik awal
+            cat: { x: 0, y: 0 },
+            fish: { x: 0, y: 0 },
+            catDraw: { x: 0, y: 0 }, // Digunakan untuk animasi bergerak (easing)
+            catRot: 0,               // Target sudut rotasi
+            catDrawRot: 0,           // Digunakan untuk animasi berputar mulus
+            
+            time: 0,
+            totalDx: 0, 
+            totalDy: 0,
+            lastMirror: null,
+            historyL5: [],
+            
+            // === Sistem Suara (Tone.js) ===
+            synth: null,
+            polySynth: null,
+            winSoundPlayed: false,
+
+            // === Sistem BGM (Musik Latar) ===
+            bgmSynth: null,
+            bgmSeq: null,
+            bgmReady: false,
+            bgmPlaying: false,
+            
+            initSound: async function() {
+                if (!this.synth) {
+                    await Tone.start(); // Wajib dipanggil saat user berinteraksi
+                    // Menurunkan volume efek suara (SFX) menjadi -10 decibel
+                    this.synth = new Tone.Synth({ volume: -10 }).toDestination();
+                    this.polySynth = new Tone.PolySynth({ volume: -10 }).toDestination();
+                }
+                if (!this.bgmReady) {
+                    // Membuat synthesizer untuk BGM dengan suara ceria namun lembut (Sine wave / Marimba style)
+                    this.bgmSynth = new Tone.Synth({
+                        oscillator: { type: "sine" },
+                        envelope: { attack: 0.05, decay: 0.2, sustain: 0.2, release: 1.5 },
+                        volume: -12
+                    }).toDestination();
+
+                    // Melodi puzzle game: asyik, mengalir, tidak terlalu cepat maupun lambat
+                    const melody = [
+                        "C4", null, "E4", "G4", 
+                        "A4", "G4", "E4", null, 
+                        "D4", null, "F4", "A4", 
+                        "G4", "F4", "D4", null
+                    ];
+                    
+                    // Membuat sekuens nada dengan durasi ketukan menengah (8n)
+                    this.bgmSeq = new Tone.Sequence((time, note) => {
+                        if (note) {
+                            this.bgmSynth.triggerAttackRelease(note, "8n", time);
+                        }
+                    }, melody, "8n");
+
+                    Tone.Transport.bpm.value = 110; // Kecepatan sedang yang pas untuk berpikir
+                    this.bgmReady = true;
+                }
+            },
+
+            toggleBGM: function() {
+                this.initSound().then(() => {
+                    const btn = document.getElementById("btn-bgm");
+                    if (this.bgmPlaying) {
+                        this.bgmSeq.stop();
+                        Tone.Transport.pause();
+                        this.bgmPlaying = false;
+                        btn.innerText = "🎵 Musik: OFF";
+                        btn.style.backgroundColor = "#6699ff";
+                        btn.style.boxShadow = "0 4px 0 #0044cc";
+                    } else {
+                        Tone.Transport.start();
+                        this.bgmSeq.start(0);
+                        this.bgmPlaying = true;
+                        btn.innerText = "🎵 Musik: ON";
+                        btn.style.backgroundColor = "#ff66a3";
+                        btn.style.boxShadow = "0 4px 0 #cc0052";
+                    }
+                });
+            },
+            
+            playSound: function(type, param) {
+                this.initSound().then(() => {
+                    const now = Tone.now();
+                    if (type === 'trans') {
+                        this.synth.triggerAttackRelease("C5", "16n", now);
+                    } else if (type === 'ref') {
+                        this.synth.triggerAttackRelease("G5", "8n", now);
+                    } else if (type === 'rot') {
+                        if (param > 0) {
+                            this.synth.triggerAttackRelease("E4", "16n", now);
+                            this.synth.triggerAttackRelease("G4", "16n", now + 0.1);
+                            this.synth.triggerAttackRelease("C5", "8n", now + 0.2);
+                        } else {
+                            this.synth.triggerAttackRelease("C5", "16n", now);
+                            this.synth.triggerAttackRelease("G4", "16n", now + 0.1);
+                            this.synth.triggerAttackRelease("E4", "8n", now + 0.2);
+                        }
+                    } else if (type === 'dil') {
+                        if (Math.abs(param) > 1) {
+                            this.synth.triggerAttackRelease("C4", "8n", now);
+                            this.synth.triggerAttackRelease("E4", "8n", now + 0.15);
+                            this.synth.triggerAttackRelease("G4", "4n", now + 0.3);
+                        } else {
+                            this.synth.triggerAttackRelease("G4", "8n", now);
+                            this.synth.triggerAttackRelease("E4", "8n", now + 0.15);
+                            this.synth.triggerAttackRelease("C4", "4n", now + 0.3);
+                        }
+                    } else if (type === 'win' && !this.winSoundPlayed) {
+                        this.polySynth.triggerAttackRelease(["C4", "E4", "G4", "C5"], "2n", now);
+                        this.winSoundPlayed = true;
+                    }
+                });
+            },
+            
+            init: function() {
+                this.canvas = document.getElementById("gameCanvas");
+                this.ctx = this.canvas.getContext("2d");
+                
+                document.getElementById("main-game").style.display = "flex";
+                this.loadLevel(1);
+                this.renderLoop();
+            },
+            
+            loadLevel: function(l) {
+                this.level = l;
+                this.lastMirror = null;
+                this.historyL5 = [];
+                this.catRot = 0;
+                this.catDrawRot = 0;
+                this.winSoundPlayed = false; // Reset status suara menang
+                
+                document.getElementById("win-container").style.display = "none";
+                
+                // Menyembunyikan seluruh UI Kontrol
+                ['trans', 'ref', 'rot', 'dil'].forEach(id => {
+                    document.getElementById("group-" + id).style.display = "none";
+                });
+                document.getElementById("group-reset").style.display = "flex";
+                
+                // Mengatur tampilan tombol "Level Sebelumnya"
+                const btnPrev = document.getElementById("btn-prev");
+                if (l > 1) {
+                    btnPrev.style.display = "block";
+                } else {
+                    btnPrev.style.display = "none";
+                }
+                
+                const titleEl = document.getElementById("level-title");
+                const descEl = document.getElementById("level-desc");
+                let uiText = ""; // Variabel untuk menyimpan teks sementara
+                
+                if (l === 1) {
+                    titleEl.innerText = "😼 Level 1: Translasi 🐠";
+                    descEl.innerText = "Geser kucing untuk mendapatkan ikan!";
+                    
+                    // UBAH ANGKA DI BAWAH INI UNTUK LEVEL 1
+                    this.cat = {x: -8, y: 8}; this.fish = {x: 5, y: -2};
+                    
+                    this.totalDx = 0; this.totalDy = 0;
+                    document.getElementById("group-trans").style.display = "flex";
+                    uiText = "Translasi: T(0,0)";
+                } 
+                else if (l === 2) {
+                    titleEl.innerText = "🪞 Level 2: Refleksi 🐠";
+                    titleEl.style.color = "#6699ff";
+                    descEl.innerText = "Pilih cermin yang tepat agar kucing memantul ke ikan!";
+                    
+                    // UBAH ANGKA DI BAWAH INI UNTUK LEVEL 2
+                    this.cat = {x: 4, y: 5}; this.fish = {x: -5, y: -4};
+                    
+                    document.getElementById("group-ref").style.display = "flex";
+                    uiText = "Cermin: -";
+                } 
+                else if (l === 3) {
+                    titleEl.innerText = "🔄 Level 3: Rotasi 🐠";
+                    titleEl.style.color = "#9966ff";
+                    descEl.innerText = "Putar kucing mengelilingi titik pusat (0,0)!";
+                    
+                    // UBAH ANGKA DI BAWAH INI UNTUK LEVEL 3
+                    this.cat = {x: 5, y: 2}; this.fish = {x: -2, y: 5};
+                    
+                    document.getElementById("group-rot").style.display = "flex";
+                    uiText = "Sudut Putar: -";
+                } 
+                else if (l === 4) {
+                    titleEl.innerText = "🔍 Level 4: Dilatasi 🐠";
+                    titleEl.style.color = "#33cc99";
+                    descEl.innerText = "Perbesar atau perkecil jarak kucing dari pusat!";
+                    
+                    // UBAH ANGKA DI BAWAH INI UNTUK LEVEL 4
+                    this.cat = {x: 2, y: -3}; this.fish = {x: 6, y: -9};
+                    
+                    document.getElementById("group-dil").style.display = "flex";
+                    uiText = "Faktor Skala (k): -";
+                }
+                else if (l === 5) {
+                    titleEl.innerText = "👑 Level 5: Komposisi 🐠";
+                    titleEl.style.color = "#ff9933";
+                    descEl.innerText = "Gunakan SEMUA cara untuk mencapai ikan!";
+                    
+                    // UBAH ANGKA DI BAWAH INI UNTUK LEVEL 5
+                    this.cat = {x: -2, y: 2}; this.fish = {x: 4, y: -6};
+                    
+                    ['trans', 'ref', 'rot', 'dil'].forEach(id => {
+                        document.getElementById("group-" + id).style.display = "flex";
+                    });
+                    uiText = "Riwayat: -";
+                }
+                
+                // Simpan koordinat awal SETELAH level dimuat, TAPI SEBELUM layar diperbarui
+                this.startCat.x = this.cat.x;
+                this.startCat.y = this.cat.y;
+
+                this.catDraw.x = this.cat.x;
+                this.catDraw.y = this.cat.y;
+
+                // Sekarang perbarui layar agar Titik Awal menampilkan angka yang benar
+                this.updateUI(uiText);
+            },
+            
+            nextLevel: function() {
+                if (this.level < 5) this.loadLevel(this.level + 1);
+            },
+            
+            prevLevel: function() {
+                if (this.level > 1) {
+                    this.playSound('trans'); // Bunyikan suara saat pindah level
+                    this.loadLevel(this.level - 1);
+                }
+            },
+            
+            resetLevel: function() {
+                this.lastMirror = null;
+                this.catRot = 0;
+                
+                if (this.level === 1) {
+                    this.cat = {x: -8, y: 8};
+                    this.totalDx = 0; this.totalDy = 0;
+                    this.updateUI("Translasi: T(0,0)");
+                } else if (this.level === 2) {
+                    this.cat = {x: 4, y: 5};
+                    this.updateUI("Cermin: -");
+                } else if (this.level === 3) {
+                    this.cat = {x: 5, y: 2};
+                    this.updateUI("Sudut Putar: -");
+                } else if (this.level === 4) {
+                    this.cat = {x: 2, y: -3};
+                    this.updateUI("Faktor Skala (k): -");
+                } else if (this.level === 5) {
+                    this.cat = {x: -2, y: 2};
+                    this.historyL5 = [];
+                    this.updateUI("Riwayat: Diulang");
+                }
+                
+                // Sembunyikan pesan menang jika muncul
+                document.getElementById("win-container").style.display = "none";
+            },
+            
+            updateUI: function(extraText) {
+                document.getElementById("start-x").innerText = this.startCat.x;
+                document.getElementById("start-y").innerText = this.startCat.y;
+                document.getElementById("cat-x").innerText = this.cat.x;
+                document.getElementById("cat-y").innerText = this.cat.y;
+                
+                const extraBox = document.getElementById("info-extra");
+                if (this.level === 5) {
+                    let histStr = this.historyL5.length > 0 ? this.historyL5.join(" ➔ ") : "Belum ada gerakan";
+                    extraBox.innerHTML = `<p class="highlight">Riwayat: <br><span style="color:#6699ff; font-size:13px;">${histStr}</span></p>`;
+                } else {
+                    extraBox.innerHTML = `<p class="highlight">${extraText}</p>`;
+                }
+            },
+            
+            addHist: function(str) {
+                if (this.level === 5) {
+                    this.historyL5.push(str);
+                    if (this.historyL5.length > 5) this.historyL5.shift(); // Max simpan 5 log
+                }
+            },
+            
+            actionTrans: function(dx, dy) {
+                let nx = this.cat.x + dx; let ny = this.cat.y + dy;
+                // Batas koordinat agar tidak hilang
+                if (nx >= -15 && nx <= 15 && ny >= -15 && ny <= 15) {
+                    this.cat.x = nx; this.cat.y = ny;
+                    this.totalDx += dx; this.totalDy += dy;
+                    this.lastMirror = null;
+                    
+                    this.playSound('trans'); // Bunyikan suara
+                    
+                    this.addHist(`T(${dx},${dy})`);
+                    if (this.level === 1) this.updateUI(`Total Translasi: T(${this.totalDx}, ${this.totalDy})`);
+                    else this.updateUI("");
+                    
+                    this.checkWin();
+                }
+            },
+            
+            actionRef: function(m) {
+                let mn = "";
+                if (m === 'x') { this.cat.y = -this.cat.y; mn = "Sumbu X"; }
+                else if (m === 'y') { this.cat.x = -this.cat.x; mn = "Sumbu Y"; }
+                else if (m === 'yx') { let t = this.cat.x; this.cat.x = this.cat.y; this.cat.y = t; mn = "y=x"; }
+                else if (m === 'y-x') { let t = this.cat.x; this.cat.x = -this.cat.y; this.cat.y = -t; mn = "y=-x"; }
+                else if (m === 'x2') { this.cat.x = 4 - this.cat.x; mn = "x=2"; }
+                else if (m === 'x-2') { this.cat.x = -4 - this.cat.x; mn = "x=-2"; }
+                else if (m === 'y3') { this.cat.y = 6 - this.cat.y; mn = "y=3"; }
+                else if (m === 'y-3') { this.cat.y = -6 - this.cat.y; mn = "y=-3"; }
+                
+                this.lastMirror = m;
+                this.playSound('ref'); // Bunyikan suara cermin
+                this.addHist(`Ref(${mn})`);
+                if (this.level === 2) this.updateUI(`Cermin: ${mn}`);
+                else this.updateUI("");
+                
+                this.checkWin();
+            },
+            
+            actionRot: function(deg) {
+                let sx = this.cat.x; let sy = this.cat.y;
+                if (deg === 90) { this.cat.x = -sy; this.cat.y = sx; }
+                else if (deg === -90) { this.cat.x = sy; this.cat.y = -sx; }
+                else if (deg === 180 || deg === -180) { this.cat.x = -sx; this.cat.y = -sy; }
+                
+                this.catRot += deg;
+                
+                this.lastMirror = null;
+                this.playSound('rot', deg); // Bunyikan suara rotasi
+                this.addHist(`Rot(${deg}°)`);
+                if (this.level === 3) this.updateUI(`Sudut Putar: ${deg}°`);
+                else this.updateUI("");
+                
+                this.checkWin();
+            },
+            
+            actionDil: function(k) {
+                this.cat.x = this.cat.x * k; this.cat.y = this.cat.y * k;
+                this.lastMirror = null;
+                this.playSound('dil', k); // Bunyikan suara skala
+                this.addHist(`Dil(${k}x)`);
+                if (this.level === 4) this.updateUI(`Skala: ${k}x`);
+                else this.updateUI("");
+                
+                this.checkWin();
+            },
+            
+            checkWin: function() {
+                if (Math.abs(this.cat.x - this.fish.x) < 0.1 && Math.abs(this.cat.y - this.fish.y) < 0.1) {
+                    this.playSound('win'); // Bunyikan nada kemenangan
+                    const winCont = document.getElementById("win-container");
+                    const btnNext = document.getElementById("btn-next");
+                    const winMsg = document.getElementById("win-msg");
+                    
+                    winCont.style.display = "flex";
+                    if (this.level < 5) {
+                        btnNext.style.display = "block";
+                        winMsg.innerText = "Yey! Kucing dapat ikan! 🎉";
+                    } else {
+                        btnNext.style.display = "none";
+                        winMsg.innerText = "Luar Biasa! Kamu Tamat! 🎓🏆";
+                    }
+                }
+            },
+            
+            renderLoop: function() {
+                // Efek Easing Animasi (Kucing meluncur ke koordinat baru)
+                this.catDraw.x += (this.cat.x - this.catDraw.x) * 0.15;
+                this.catDraw.y += (this.cat.y - this.catDraw.y) * 0.15;
+                this.catDrawRot += (this.catRot - this.catDrawRot) * 0.15;
+                
+                this.time += 0.1;
+                let bounceY = Math.sin(this.time) * 4;
+                
+                const c = this.ctx;
+                const o = this.origin;
+                const s = this.scale;
+                
+                c.clearRect(0, 0, 400, 400);
+                
+                // Menggambar Grid
+                c.strokeStyle = "#e8e8e8"; c.lineWidth = 1;
+                for (let i = -10; i <= 10; i++) {
+                    c.beginPath(); c.moveTo(o + i*s, 0); c.lineTo(o + i*s, 400); c.stroke();
+                    c.beginPath(); c.moveTo(0, o - i*s); c.lineTo(400, o - i*s); c.stroke();
+                }
+                
+                // Menggambar Sumbu Utama X dan Y
+                c.strokeStyle = "#999"; c.lineWidth = 2;
+                c.beginPath(); c.moveTo(o, 0); c.lineTo(o, 400); c.stroke();
+                c.beginPath(); c.moveTo(0, o); c.lineTo(400, o); c.stroke();
+                
+                // Menggambar Garis Cermin
+                if ((this.level === 2 || this.level === 5) && this.lastMirror) {
+                    c.strokeStyle = "#6699ff"; c.lineWidth = 4; c.setLineDash([8, 8]);
+                    c.beginPath();
+                    let m = this.lastMirror;
+                    if (m === 'x') { c.moveTo(0, o); c.lineTo(400, o); }
+                    else if (m === 'y') { c.moveTo(o, 0); c.lineTo(o, 400); }
+                    else if (m === 'yx') { c.moveTo(0, 400); c.lineTo(400, 0); }
+                    else if (m === 'y-x') { c.moveTo(0, 0); c.lineTo(400, 400); }
+                    else if (m === 'x2') { c.moveTo(o + 2*s, 0); c.lineTo(o + 2*s, 400); }
+                    else if (m === 'x-2') { c.moveTo(o - 2*s, 0); c.lineTo(o - 2*s, 400); }
+                    else if (m === 'y3') { c.moveTo(0, o - 3*s); c.lineTo(400, o - 3*s); }
+                    else if (m === 'y-3') { c.moveTo(0, o + 3*s); c.lineTo(400, o + 3*s); }
+                    c.stroke(); c.setLineDash([]);
+                }
+                
+                // Pusat Rotasi dan Dilatasi
+                if (this.level >= 3) {
+                    c.fillStyle = "#ff3385";
+                    c.beginPath(); c.arc(o, o, 6, 0, Math.PI*2); c.fill();
+                }
+                
+                // Menggambar Ikan & Kucing menggunakan Emoji
+                c.font = "28px Arial"; c.textAlign = "center"; c.textBaseline = "middle";
+                c.fillText("🐠", o + this.fish.x * s, o - this.fish.y * s - bounceY);
+                
+                // Gambar bayangan kucing di Titik Awal (agak transparan)
+                c.globalAlpha = 0.3;
+                c.fillText("😼", o + this.startCat.x * s, o - this.startCat.y * s);
+                c.globalAlpha = 1.0; // Kembalikan opasitas normal
+                
+                // Menyimpan status kanvas, pindah ke titik kucing, lalu memutar kanvasnya
+                c.save();
+                c.translate(o + this.catDraw.x * s, o - this.catDraw.y * s);
+                // Kita buat minus (-) karena putaran matematis (berlawanan jarum jam) 
+                // adalah kebalikan dari putaran kanvas bawaan
+                c.rotate(-this.catDrawRot * Math.PI / 180);
+                c.fillText("😼", 0, 0);
+                c.restore();
+                
+                // Meminta frame animasi selanjutnya
+                requestAnimationFrame(() => this.renderLoop());
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            window.game.init();
+        });
+    </script>
+</body>
+</html>
